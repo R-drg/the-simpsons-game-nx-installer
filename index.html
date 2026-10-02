@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Simpsons Game NX installer</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="description" content="Builds the Nintendo Switch package of The Simpsons Game from your own Xbox 360 copy, in your browser.">
+  <!-- Layout and flow adapted from nfsmw-nx-installer by StevensND (GPL-3.0). -->
+  <style>
+    @font-face { font-family: "Permanent Marker"; src: url(fonts/PermanentMarker-Regular.ttf) format("truetype"); font-display: swap; }
+    :root { --bg: #0d0d0f; --panel: rgba(18, 18, 22, .84); --inset: rgba(6, 6, 8, .85); --text: #f2f2f2;
+      --muted: #b0b0b8; --red: #fed90f; --red-hover: #ffe54d; --on-accent: #16120a; --good: #4fc27a; --bad: #ff6a5f; --link: #fed90f;
+      --line: rgba(255, 255, 255, .1); --gap: clamp(8px, 1.1vh, 14px); --pad: clamp(10px, 1.5vh, 18px); }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { background: var(--bg); }
+    body { margin: 0; min-height: 100vh; color: var(--text); background: transparent;
+      font: clamp(15px, 1.7vh, 16px)/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    /* the cover, fixed on the right behind everything, fading into the page on the left; a layer rather than
+       background-attachment: fixed, which phones ignore */
+    body::before { content: ""; position: fixed; inset: 0; z-index: -1;
+      background: linear-gradient(90deg, var(--bg) 0%, rgba(13, 13, 15, .93) 38%, rgba(13, 13, 15, .55) 70%, rgba(13, 13, 15, .35) 100%),
+        url(cover.webp) right center / contain no-repeat, var(--bg); }
+    main { width: 100%; max-width: 900px; margin: 0 auto; padding: clamp(16px, 3vh, 36px) 16px;
+      display: flex; flex-direction: column; gap: calc(var(--gap) * 1.4); }
+    .languages { display: flex; justify-content: center; gap: 8px; }
+    .languages button { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px;
+      padding: 3px 10px; font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1.4; cursor: pointer; margin: 0; }
+    .languages button[aria-pressed="true"] { color: #fff; border-color: var(--red); background: rgba(254, 217, 15, .22); }
+    .languages button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    h1 { font-family: "Permanent Marker", ui-sans-serif, system-ui, sans-serif; font-weight: 400; text-align: center;
+      font-size: clamp(1.6rem, 6.4vw, 3rem); line-height: 1.15; margin: 0; text-wrap: balance; text-shadow: 0 2px 14px rgba(0, 0, 0, .8); }
+    h1 .tag { display: inline-block; background: var(--red); color: var(--on-accent); text-shadow: none; padding: .02em .28em .06em; transform: rotate(-2deg);
+      margin-right: .15em; }
+    p.lead { color: #e2e2e6; text-align: center; margin: 0 auto; max-width: 720px; text-wrap: balance;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, .9); }
+    p.lead strong { white-space: nowrap; }
+    section { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--red); border-radius: 10px;
+      padding: var(--pad) calc(var(--pad) + 4px); box-shadow: 0 12px 32px rgba(0, 0, 0, .4);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+    h2 { font-size: 1.1em; font-weight: 800; margin: 0 0 calc(var(--pad) * .6); text-transform: uppercase; letter-spacing: .03em; }
+    button, label.button { display: inline-block; background: var(--red); color: var(--on-accent); border: 0; border-radius: 8px;
+      padding: .55em 1.1em; font-family: inherit; font-size: 1em; font-weight: 700; line-height: 1.3; cursor: pointer; margin: 4px 8px 4px 0; transition: background .12s; }
+    button:not(:disabled):hover, label.button:hover { background: var(--red-hover); }
+    button:focus-visible, label.button:focus-within { outline: 2px solid #fff; outline-offset: 2px; }
+    button:disabled { background: #3a3a40; color: #85858d; cursor: default; }
+    input[type=file] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .hint { margin: calc(var(--pad) * .5) 0 0; }
+    .chosen { color: var(--muted); margin-top: calc(var(--pad) * .35); word-break: break-all; }
+    .choices { display: grid; justify-items: start; row-gap: calc(var(--pad) * .4); }
+    .choices button { margin: 0; }
+    .choices button + .flow { margin-top: calc(var(--pad) * .7); }
+    .flow { margin: 0; font-weight: 700; }
+    .detected { margin-top: calc(var(--pad) * .7); background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+      padding: 10px 16px; }
+    .detected.good { border-color: var(--good); }
+    .detected.bad { border-color: var(--bad); }
+    .detected .title { font-size: 1.15rem; font-weight: 800; }
+    .detected .state { color: var(--muted); }
+    .detected .state.good { color: var(--good); }
+    .detected .state.bad { color: var(--bad); }
+    .fingerprint { font: 12px ui-monospace, monospace; word-break: break-all; user-select: all; margin-top: 4px; }
+    progress { width: 100%; height: 12px; margin-top: calc(var(--pad) * .7); accent-color: var(--red); }
+    #log { font: 13px/1.45 ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; max-height: 96px; overflow: auto;
+      margin: 8px 0 0; }
+    .error { color: var(--bad); }
+    ol { margin: 0; padding-left: 20px; }
+    li + li { margin-top: 4px; }
+    code { background: rgba(0, 0, 0, .5); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; color: #fff; font-weight: 700; }
+    a { color: var(--link); font-weight: 700; text-underline-offset: 2px; }
+    a:hover { color: #ffe97a; }
+    footer { display: flex; flex-direction: column; gap: var(--gap); text-align: center; }
+    .source { margin: 0; font-weight: 800; }
+    .source a { text-decoration: none; margin: 0 10px; }
+    .source a:hover, .source a:focus-visible { text-decoration: underline; }
+    .credits, .legal { margin: 0; font-size: clamp(12px, 1.35vh, 13.5px); line-height: 1.5; text-wrap: pretty; }
+    .credits { color: #d8d8de; }
+    .legal { color: #c4c4cc; background: rgba(10, 10, 12, .8); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+    @media (max-width: 700px) {
+      /* the face would sit behind the text: on a phone the cover only tints the top */
+      body::before { background: linear-gradient(180deg, rgba(13, 13, 15, .55) 0%, var(--bg) 45%),
+        url(cover.webp) center top / 100% auto no-repeat, var(--bg); }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <nav class="languages" id="languages" aria-label="Language"></nav>
+    <h1><span class="tag">The Simpsons Game</span> NX installer</h1>
+    <p class="lead" data-i18n-html="lead">Builds the <strong>Nintendo Switch</strong> package of <strong>The Simpsons Game</strong> from your own
+      <strong>Xbox 360</strong> copy. Everything runs in <strong>this browser</strong>: your game files are never uploaded.</p>
+  </header>
+
+  <section>
+    <h2 data-i18n="step1">1. Choose your game</h2>
+    <label class="button" for="iso" data-i18n="formatIso">Disc image (.iso)</label>
+    <label class="button" for="folder" data-i18n="formatXex">Game folder</label>
+    <input id="iso" type="file" accept=".iso">
+    <input id="folder" type="file" webkitdirectory>
+    <p class="hint" data-i18n-html="formatHint">For the <strong>game folder</strong>, select the folder that contains <code>default.xex</code> and the
+      disc's folders (<code>audiostreams</code>, <code>frontend</code>, <code>movies</code>…).</p>
+    <div class="chosen" id="chosen">Nothing chosen yet.</div>
+  </section>
+
+  <section>
+    <h2 data-i18n="step2">2. Create the package</h2>
+    <div class="choices">
+      <p class="flow" data-i18n-html="step2First">Installing for the first time:</p>
+      <button id="create" disabled data-i18n="create">Create the-simpsons-game-nx.zip</button>
+      <p class="flow" data-i18n-html="step2Update">Already installed, and you only want the new version (<code>.nro</code>, <code>.toml</code> and the licences):</p>
+      <button id="update" disabled data-i18n="createUpdate">Create the-simpsons-game-nx-update.zip</button>
+    </div>
+    <div class="detected" id="detected" hidden>
+      <div class="title" id="detectedTitle"></div>
+      <div class="state" id="detectedState"></div>
+      <div class="fingerprint" id="fingerprint" hidden></div>
+    </div>
+    <progress id="bar" max="1" value="0" hidden></progress>
+    <div id="log" aria-live="polite"></div>
+  </section>
+
+  <section>
+    <h2 data-i18n="step3">3. Copy it to the Switch</h2>
+    <ol>
+      <li data-i18n-html="step3Extract">Extract the downloaded <code>.zip</code> into <code>sdmc:/switch/</code>.</li>
+      <li data-i18n-html="step3Start">Hold <strong>R</strong> while starting any installed game to open the <strong>Homebrew Menu</strong>, then start
+        <code>the_simpsons_game.nro</code>.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p class="source">
+      <a href="https://github.com/R-drg/the-simpsons-game-nx" target="_blank" rel="noopener" data-i18n="sourceCode">Source code</a>
+      <a href="https://github.com/R-drg/the-simpsons-game-nx-installer" target="_blank" rel="noopener" data-i18n="installerSource">Installer source</a>
+    </p>
+    <p class="credits" data-i18n-html="credits"></p>
+    <p class="legal" data-i18n="legal"></p>
+  </footer>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

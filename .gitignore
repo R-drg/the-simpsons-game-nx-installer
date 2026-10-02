@@ -1,0 +1,5 @@
+# The NRO is a release asset of R-drg/the-simpsons-game-nx; the deployment workflow downloads it.
+release/*.nro
+*.zip
+node_modules/
+__pycache__/

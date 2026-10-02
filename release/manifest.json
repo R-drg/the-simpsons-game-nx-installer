@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "builds": [
+    {
+      "edition": "USA retail disc",
+      "xex_sha256": "71d99dad06be1b512fc3058123b84fdad71339205a7e9249058ac5e34a82a231",
+      "xex_size": 14200832,
+      "nro": "the_simpsons_game.nro",
+      "nro_sha256": "31ce37caf865c22da1d9f847d9792ac7f4deb18ebbdf553df36332899a32aa0e",
+      "toml": "simpsons.toml"
+    }
+  ]
+}
